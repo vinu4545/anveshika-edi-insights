@@ -132,11 +132,11 @@ const CopilotPanel = ({ open, setOpen, side, setSide }: CopilotPanelProps) => {
         {open && (
           <motion.div
             key="copilot-panel"
-            initial={{ x: isRight ? 400 : -400, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: isRight ? 400 : -400, opacity: 0 }}
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 380, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
-            className={`fixed top-0 ${isRight ? "right-0" : "left-0"} z-50 h-full w-[380px] max-w-[90vw] flex flex-col border-border/50 ${
+            className={`h-screen flex flex-col border-border/50 shrink-0 overflow-hidden ${
               isRight ? "border-l" : "border-r"
             }`}
             style={{

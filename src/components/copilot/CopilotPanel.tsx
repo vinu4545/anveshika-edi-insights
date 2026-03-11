@@ -53,14 +53,9 @@ const initialMessages: ChatMessage[] = [
   },
 ];
 
-interface CopilotPanelProps {
-  open: boolean;
-  setOpen: (open: boolean) => void;
-  side: "right" | "left";
-  setSide: (side: "right" | "left") => void;
-}
-
-const CopilotPanel = ({ open, setOpen, side, setSide }: CopilotPanelProps) => {
+const CopilotPanel = () => {
+  const [open, setOpen] = useState(true);
+  const [side, setSide] = useState<"right" | "left">("right");
   const [mode, setMode] = useState<"ask" | "auto">("ask");
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [input, setInput] = useState("");
@@ -112,12 +107,13 @@ const CopilotPanel = ({ open, setOpen, side, setSide }: CopilotPanelProps) => {
         {!open && (
           <motion.button
             key="collapsed-bar"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0, x: isRight ? 20 : -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: isRight ? 20 : -20 }}
             onClick={() => setOpen(true)}
-            className="flex flex-col items-center gap-2 py-4 px-1.5 cursor-pointer hover:border-primary/40 transition-colors border-border/50 bg-card/80 backdrop-blur-md"
-            style={{ borderLeft: isRight ? '1px solid hsl(var(--border))' : 'none', borderRight: !isRight ? '1px solid hsl(var(--border))' : 'none' }}
+            className={`fixed top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2 py-4 px-1.5 rounded-lg glass-card cursor-pointer hover:border-primary/40 transition-colors ${
+              isRight ? "right-0 rounded-r-none" : "left-0 rounded-l-none"
+            }`}
           >
             <Bot className="w-5 h-5 text-primary" />
             <span className="text-[10px] text-muted-foreground [writing-mode:vertical-lr] rotate-180">
@@ -132,11 +128,11 @@ const CopilotPanel = ({ open, setOpen, side, setSide }: CopilotPanelProps) => {
         {open && (
           <motion.div
             key="copilot-panel"
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 380, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
+            initial={{ x: isRight ? 400 : -400, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: isRight ? 400 : -400, opacity: 0 }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
-            className={`h-screen flex flex-col border-border/50 shrink-0 overflow-hidden ${
+            className={`fixed top-0 ${isRight ? "right-0" : "left-0"} z-50 h-full w-[380px] max-w-[90vw] flex flex-col border-border/50 ${
               isRight ? "border-l" : "border-r"
             }`}
             style={{

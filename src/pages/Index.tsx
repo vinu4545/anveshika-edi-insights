@@ -7,6 +7,7 @@ import PricingSection from "@/components/PricingSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import FAQSection from "@/components/FAQSection";
 import FooterSection from "@/components/FooterSection";
+import CopilotPanel from "@/components/copilot/CopilotPanel";
 
 const Index = () => {
   return (
@@ -20,6 +21,7 @@ const Index = () => {
       <TestimonialsSection />
       <FAQSection />
       <FooterSection />
+      <CopilotPanel />
     </div>
   );
 };

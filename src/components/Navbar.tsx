@@ -5,7 +5,6 @@ import { Menu, X, Zap } from "lucide-react";
 const navLinks = [
   { label: "Features", href: "#features" },
   { label: "How It Works", href: "#how-it-works" },
-  { label: "Pricing", href: "#pricing" },
   { label: "FAQ", href: "#faq" },
 ];
 
@@ -38,12 +37,7 @@ const Navbar = () => {
               {link.label}
             </a>
           ))}
-          <a
-            href="#demo"
-            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
-          >
-            Try Demo
-          </a>
+  
         </div>
 
         <button className="md:hidden text-foreground" onClick={() => setIsOpen(!isOpen)}>

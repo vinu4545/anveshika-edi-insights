@@ -1,286 +1,452 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Upload, FileText, ChevronRight, ChevronDown, AlertCircle, CheckCircle, Wrench, MessageSquare } from "lucide-react";
+import { useState, useRef } from "react";
+import {
+  Upload,
+  AlertCircle,
+  CheckCircle,
+  Wrench,
+  X
+} from "lucide-react";
 
-const sampleStructure = [
-  {
-    label: "ISA – Interchange Header",
-    children: [
-      {
-        label: "GS – Functional Group",
-        children: [
-          {
-            label: "ST – Transaction Set (837)",
-            children: [
-              { label: "BHT – Beginning of Transaction" },
-              {
-                label: "Loop 2000A – Billing Provider",
-                children: [
-                  { label: "NM1 – Provider Name" },
-                  { label: "N3 – Address" },
-                  { label: "N4 – City/State/ZIP" },
-                ],
-              },
-              {
-                label: "Loop 2000B – Subscriber",
-                children: [
-                  { label: "NM1 – Subscriber Name" },
-                  { label: "DMG – Demographics" },
-                ],
-              },
-              {
-                label: "Loop 2300 – Claim",
-                children: [
-                  { label: "CLM – Claim Information", hasError: true },
-                  { label: "DTP – Service Date" },
-                  {
-                    label: "Loop 2400 – Service Lines",
-                    children: [
-                      { label: "SV1 – Professional Service" },
-                      { label: "DTP – Service Date" },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-          { label: "SE – Transaction Set Trailer" },
-        ],
-      },
-      { label: "GE – Functional Group Trailer" },
-    ],
-  },
-  { label: "IEA – Interchange Trailer" },
-];
+export default function DemoSection() {
 
-const errors = [
-  { loop: "Loop 2300", segment: "CLM", element: "CLM02", description: "Claim amount mismatch – expected numeric value", fix: "Replace 'ABC' with '1500.00'" },
-  { loop: "Loop 2000A", segment: "N4", element: "N403", description: "Invalid ZIP code format", fix: "Change '9410' to '94102'" },
-  { loop: "Loop 2400", segment: "SV1", element: "SV102", description: "Missing procedure code modifier", fix: "Add modifier '25' after procedure code" },
-];
+  const [segments, setSegments] = useState<any[]>([]);
+  const [errors, setErrors] = useState<any[]>([]);
+  const [metadata, setMetadata] = useState<any[]>([]);
+  const [rawEDI, setRawEDI] = useState<string[]>([]);
+  const [selectedRow, setSelectedRow] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("segments");
 
-interface TreeNodeProps {
-  node: { label: string; children?: TreeNodeProps["node"][]; hasError?: boolean };
-  depth?: number;
-}
+  const [showFixPopup, setShowFixPopup] = useState(false);
+  const [selectedError, setSelectedError] = useState<any | null>(null);
 
-const TreeNode = ({ node, depth = 0 }: TreeNodeProps) => {
-  const [open, setOpen] = useState(depth < 2);
-  const hasChildren = node.children && node.children.length > 0;
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  return (
-    <div className="select-none">
-      <button
-        onClick={() => hasChildren && setOpen(!open)}
-        className={`flex items-center gap-1.5 w-full text-left py-1 px-2 rounded text-sm hover:bg-muted/50 transition-colors ${
-          node.hasError ? "text-destructive" : "text-foreground"
-        }`}
-        style={{ paddingLeft: `${depth * 16 + 8}px` }}
-      >
-        {hasChildren ? (
-          open ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-        ) : (
-          <span className="w-3.5 shrink-0" />
-        )}
-        <span className="font-mono text-xs">{node.label}</span>
-        {node.hasError && <AlertCircle className="w-3 h-3 text-destructive shrink-0 ml-1" />}
-      </button>
-      <AnimatePresence>
-        {open && hasChildren && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            {node.children!.map((child, i) => (
-              <TreeNode key={i} node={child} depth={depth + 1} />
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
+  const handleFileUpload = async (file: File) => {
 
-const DemoSection = () => {
-  const [activeTab, setActiveTab] = useState<"structure" | "errors" | "assistant">("structure");
-  const [uploaded, setUploaded] = useState(false);
+    const text = await file.text();
+
+    const lines = text
+      .replace(/\n/g, "")
+      .split("~")
+      .filter(l => l.trim() !== "");
+
+    setRawEDI(lines);
+
+    setLoading(true);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+
+      const res = await fetch(
+        "http://127.0.0.1:8000/parse-edi",
+        { method: "POST", body: formData }
+      );
+
+      const data = await res.json();
+
+      setSegments(data.segments || []);
+      setErrors(data.errors || []);
+
+      setMetadata(
+        Array.isArray(data.metadata)
+          ? data.metadata
+          : data.metadata
+          ? [data.metadata]
+          : []
+      );
+
+    } catch (err) {
+      console.error(err);
+    }
+
+    setLoading(false);
+
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+
+    e.preventDefault();
+
+    const files = e.dataTransfer.files;
+
+    if (files.length > 0) {
+      handleFileUpload(files[0]);
+    }
+
+  };
+
+  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
+
+  const selectedLine =
+    selectedRow ? rawEDI[selectedRow - 1] : null;
+
+  const selectedSegment =
+    segments.find(s => s.row === selectedRow);
+
+  const openFixPopup = (err: any) => {
+
+    setSelectedError(err);
+    setShowFixPopup(true);
+
+  };
+
+  const beforeCorrection =
+    selectedError ? rawEDI[selectedError.row - 1] : "";
+
+  const afterCorrection =
+    beforeCorrection.replace("999999999", "123456789");
 
   return (
-    <section id="demo" className="py-24 relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-background via-secondary/10 to-background" />
-      <div className="section-container relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-12"
+
+    <section className="py-16 bg-gray-50">
+
+      <div className="max-w-7xl mx-auto px-6">
+
+        <div
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          className="border-2 border-dashed border-gray-400 rounded-xl p-12 text-center mb-10 bg-white"
         >
-          <p className="text-sm font-medium text-primary mb-2 uppercase tracking-wider">Interactive Demo</p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">See It in Action</h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            Experience the full EDI analysis workflow with our interactive demo.
+
+          <Upload className="mx-auto mb-4 text-gray-700" size={42} />
+
+          <h2 className="text-2xl font-bold text-gray-900">
+            Upload EDI File
+          </h2>
+
+          <p className="text-gray-700 mt-2">
+            Drag & Drop or Upload manually
           </p>
-        </motion.div>
 
-        {!uploaded ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="max-w-xl mx-auto"
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            <button
-              onClick={() => setUploaded(true)}
-              className="w-full glass-card p-12 flex flex-col items-center gap-4 hover:border-primary/40 transition-colors cursor-pointer group"
-            >
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                <Upload className="w-7 h-7 text-primary" />
-              </div>
-              <div className="text-center">
-                <p className="text-foreground font-semibold mb-1">Drag & Drop EDI File</p>
-                <p className="text-xs text-muted-foreground">Supports .edi, .txt, .dat, .x12 files</p>
-              </div>
-              <span
-                className="px-5 py-2 rounded-lg text-primary-foreground text-sm font-medium"
-                style={{ background: "var(--gradient-primary)" }}
-              >
-                Load Sample 837 File
-              </span>
-            </button>
-          </motion.div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-5xl mx-auto"
-          >
-            {/* File info bar */}
-            <div className="glass-card p-4 mb-4 flex flex-wrap items-center gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-primary" />
-                <span className="text-foreground font-medium">sample_837_claim.edi</span>
-              </div>
-              <span className="text-muted-foreground">Type: <span className="text-accent">837 Professional</span></span>
-              <span className="text-muted-foreground">Version: <span className="text-foreground">005010X222A1</span></span>
-              <div className="ml-auto flex items-center gap-2">
-                <span className="flex items-center gap-1 text-destructive text-xs"><AlertCircle className="w-3 h-3" /> 3 Errors</span>
-                <span className="flex items-center gap-1 text-accent text-xs"><CheckCircle className="w-3 h-3" /> 42 Segments</span>
-              </div>
-            </div>
+            Upload File
+          </button>
 
-            {/* Tabs */}
-            <div className="flex gap-1 mb-4">
-              {([
-                { key: "structure" as const, label: "Structure", icon: ChevronRight },
-                { key: "errors" as const, label: "Errors (3)", icon: AlertCircle },
-                { key: "assistant" as const, label: "AI Assistant", icon: MessageSquare },
-              ]).map(tab => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    activeTab === tab.key
-                      ? "bg-primary/20 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  }`}
-                >
-                  <tab.icon className="w-3.5 h-3.5" />
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".edi,.txt,.dat,.x12"
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files?.[0]) handleFileUpload(e.target.files[0]);
+            }}
+          />
 
-            {/* Content */}
-            <div className="glass-card overflow-hidden" style={{ minHeight: 400 }}>
-              <AnimatePresence mode="wait">
-                {activeTab === "structure" && (
-                  <motion.div key="structure" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-4">
-                    <p className="text-xs text-muted-foreground mb-3">EDI Structure Tree — click to expand/collapse</p>
-                    {sampleStructure.map((node, i) => (
-                      <TreeNode key={i} node={node} />
-                    ))}
-                  </motion.div>
-                )}
+        </div>
 
-                {activeTab === "errors" && (
-                  <motion.div key="errors" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-4">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-left text-xs text-muted-foreground border-b border-border">
-                          <th className="pb-2 pr-4">Loop</th>
-                          <th className="pb-2 pr-4">Segment</th>
-                          <th className="pb-2 pr-4">Element</th>
-                          <th className="pb-2 pr-4">Description</th>
-                          <th className="pb-2">Fix</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {errors.map((err, i) => (
-                          <tr key={i} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                            <td className="py-3 pr-4 text-foreground font-mono text-xs">{err.loop}</td>
-                            <td className="py-3 pr-4 text-destructive font-mono text-xs">{err.segment}</td>
-                            <td className="py-3 pr-4 text-foreground font-mono text-xs">{err.element}</td>
-                            <td className="py-3 pr-4 text-muted-foreground text-xs">{err.description}</td>
-                            <td className="py-3">
-                              <button className="flex items-center gap-1 px-2.5 py-1 rounded bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">
-                                <Wrench className="w-3 h-3" />
-                                Fix
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </motion.div>
-                )}
-
-                {activeTab === "assistant" && (
-                  <motion.div key="assistant" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-4 flex flex-col" style={{ minHeight: 360 }}>
-                    <div className="flex-1 space-y-4 mb-4">
-                      <div className="flex gap-3">
-                        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                          <MessageSquare className="w-3.5 h-3.5 text-primary" />
-                        </div>
-                        <div className="glass-card p-3 text-sm text-muted-foreground max-w-md">
-                          I found 3 errors in your 837 claim file. The most critical is a claim amount mismatch in CLM02. Would you like me to explain each error?
-                        </div>
-                      </div>
-                      <div className="flex gap-3 justify-end">
-                        <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-sm text-foreground max-w-md">
-                          What does CLM02 mean and how do I fix it?
-                        </div>
-                      </div>
-                      <div className="flex gap-3">
-                        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                          <MessageSquare className="w-3.5 h-3.5 text-primary" />
-                        </div>
-                        <div className="glass-card p-3 text-sm text-muted-foreground max-w-md">
-                          <strong className="text-foreground">CLM02</strong> is the Total Claim Charge Amount in the CLM segment. It must be a valid numeric value representing the total billed amount. Your file has 'ABC' which is non-numeric. Replace it with the correct amount, e.g., <code className="text-accent">1500.00</code>.
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Ask about any segment, error, or rejection code..."
-                        className="flex-1 px-4 py-2.5 rounded-lg bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                      />
-                      <button className="px-4 py-2.5 rounded-lg text-primary-foreground text-sm font-medium shrink-0" style={{ background: "var(--gradient-primary)" }}>
-                        Send
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </motion.div>
+        {loading && (
+          <p className="text-center text-lg text-gray-700">
+            Parsing EDI File...
+          </p>
         )}
-      </div>
-    </section>
-  );
-};
 
-export default DemoSection;
+        {metadata.length > 0 && (
+
+          <div className="space-y-8">
+
+            {/* ✅ DYNAMIC METADATA FIX */}
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+
+              {metadata.map((meta, i) => (
+
+                Object.entries(meta).map(([key, value]) => (
+
+                  <div
+                    key={i + key}
+                    className="border rounded-lg p-5 bg-white shadow"
+                  >
+
+                    <p className="text-gray-600 text-sm">
+                      {key.replace(/_/g, " ").toUpperCase()}
+                    </p>
+
+                    <p className="font-semibold text-lg text-gray-900">
+                      {String(value) || "Unknown"}
+                    </p>
+
+                  </div>
+
+                ))
+
+              ))}
+
+            </div>
+
+            {/* TABS */}
+
+            <div className="flex gap-8 border-b text-lg font-semibold">
+
+              <button
+                onClick={() => setActiveTab("segments")}
+                className={`pb-2 ${
+                  activeTab === "segments"
+                    ? "border-b-2 border-blue-600 text-blue-600"
+                    : "text-gray-700"
+                }`}
+              >
+                Segments
+              </button>
+
+              <button
+                onClick={() => setActiveTab("errors")}
+                className={`pb-2 ${
+                  activeTab === "errors"
+                    ? "border-b-2 border-blue-600 text-blue-600"
+                    : "text-gray-700"
+                }`}
+              >
+                Errors ({errors.length})
+              </button>
+
+            </div>
+
+            {/* SEGMENTS TAB */}
+
+            {activeTab === "segments" && (
+
+              <div className="grid grid-cols-[300px_1fr] gap-6">
+
+                <div className="border rounded-lg p-4 bg-white h-[520px] overflow-auto shadow">
+
+                  {segments.map((seg, i) => (
+
+                    <div
+                      key={i}
+                      onClick={() => setSelectedRow(seg.row)}
+                      className={`cursor-pointer px-3 py-2 rounded font-mono text-base ${
+                        selectedRow === seg.row
+                          ? "bg-blue-100 text-blue-800"
+                          : "hover:bg-gray-200 text-gray-900"
+                      }`}
+                    >
+
+                      {seg.segment_id} (Row {seg.row})
+
+                    </div>
+
+                  ))}
+
+                </div>
+
+                <div className="border rounded-lg p-6 bg-white shadow font-mono">
+
+                  {selectedLine ? (
+
+                    <div>
+
+                      <div className="flex gap-4 mb-6 text-lg">
+
+                        <span className="text-gray-500 w-10">
+                          {selectedRow}
+                        </span>
+
+                        <span className="text-gray-900 break-all">
+                          {selectedLine}~
+                        </span>
+
+                      </div>
+
+                      <div className="space-y-1">
+
+                        {selectedSegment?.elements?.map((el: any, i: number) => {
+
+                          const errorHere = errors.find(
+                            e =>
+                              e.row === selectedRow &&
+                              e.column === el.column
+                          );
+
+                          return (
+
+                            <div
+                              key={i}
+                              className={`flex gap-4 px-2 py-1 rounded text-base ${
+                                errorHere
+                                  ? "bg-red-200 text-red-800"
+                                  : "text-gray-900"
+                              }`}
+                            >
+
+                              <span className="w-20 text-gray-500">
+                                Col {el.column}
+                              </span>
+
+                              <span>
+                                {el.value || "(empty)"}
+                              </span>
+
+                            </div>
+
+                          );
+
+                        })}
+
+                      </div>
+
+                    </div>
+
+                  ) : (
+
+                    <p className="text-gray-700 text-lg">
+                      Select a segment to view details
+                    </p>
+
+                  )}
+
+                </div>
+
+              </div>
+
+            )}
+
+            {/* ERROR TAB */}
+
+            {activeTab === "errors" && (
+
+              <div className="space-y-4">
+
+                {errors.length === 0 ? (
+
+                  <div className="flex items-center gap-2 text-green-700 text-lg">
+
+                    <CheckCircle size={20}/>
+                    No validation errors found
+
+                  </div>
+
+                ) : (
+
+                  errors.map((err, i) => {
+
+                    const line = rawEDI[err.row - 1];
+
+                    return (
+
+                      <div
+                        key={i}
+                        className="border border-red-400 bg-red-50 rounded-lg p-4"
+                      >
+
+                        <p className="font-mono text-gray-900 mb-2">
+                          Row {err.row} → {line}~
+                        </p>
+
+                        <div className="flex items-center gap-2 mb-1">
+
+                          <AlertCircle className="text-red-700"/>
+
+                          <p className="font-semibold text-red-700">
+                            {err.code}
+                          </p>
+
+                        </div>
+
+                        <p className="text-gray-800 mb-3">
+                          {err.description}
+                        </p>
+
+                        <button
+                          onClick={() => openFixPopup(err)}
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        >
+                          <Wrench size={16}/>
+                          Fix
+                        </button>
+
+                      </div>
+
+                    );
+
+                  })
+
+                )}
+
+              </div>
+
+            )}
+
+          </div>
+
+        )}
+
+      </div>
+
+      {showFixPopup && (
+
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+
+          <div className="bg-white w-[700px] rounded-xl shadow-2xl p-8">
+
+            <div className="flex justify-between mb-6">
+
+              <h2 className="text-2xl font-bold text-gray-900">
+                Suggested Correction
+              </h2>
+
+              <button
+                onClick={() => setShowFixPopup(false)}
+                className="p-1 rounded hover:bg-red-100"
+              >
+                <X className="text-red-600 hover:text-red-800" size={24}/>
+              </button>
+
+            </div>
+
+            <div className="mb-6">
+
+              <p className="font-semibold text-red-700 mb-2">
+                Before Correction
+              </p>
+
+              <div className="font-mono bg-red-50 border border-red-400 text-red-900 p-4 rounded">
+                {beforeCorrection}~
+              </div>
+
+            </div>
+
+            <div className="mb-8">
+
+              <p className="font-semibold text-green-700 mb-2">
+                After Correction
+              </p>
+
+              <div className="font-mono bg-green-50 border border-green-400 text-green-900 p-4 rounded">
+                {afterCorrection}~
+              </div>
+
+            </div>
+
+            <div className="flex justify-end gap-4">
+
+              <button className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                Accept Correction
+              </button>
+
+              <button className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
+                Decline
+              </button>
+
+              <button className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600">
+                Fix Manually
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
+
+    </section>
+
+  );
+
+}

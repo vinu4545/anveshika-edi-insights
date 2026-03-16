@@ -72,30 +72,6 @@ const HeroSection = () => {
             </a>
           </motion.div>
         </div>
-
-        {/* Dashboard Preview */}
-        <motion.div
-          initial={{ opacity: 0, y: 40, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="relative max-w-5xl mx-auto"
-        >
-          <div className="glass-card p-1.5 glow-effect">
-            <img
-              src={heroDashboard}
-              alt="Anveshika EDI Parser Dashboard showing healthcare data analysis interface"
-              className="w-full rounded-lg"
-            />
-          </div>
-          {/* Floating badge */}
-          <motion.div
-            animate={{ y: [0, -8, 0] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute -top-4 -right-4 glass-card px-4 py-2 text-xs font-medium text-accent"
-          >
-            ✓ HIPAA Compliant
-          </motion.div>
-        </motion.div>
       </div>
     </section>
   );

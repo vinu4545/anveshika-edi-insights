@@ -215,8 +215,8 @@ const CopilotPanel = () => {
                 >
                   <Sparkles className="w-4 h-4 text-primary-foreground" />
                 </div>
-                <span className="text-lg font-bold" style={{ color: "hsl(204, 86%, 34%)" }}>
-                  Copilot AI
+                <span className="text-lg font-bold" style={{ color: "#0f172a" }}>
+                  Copilot
                 </span>
                 <span className="text-[11px] px-1.5 py-0.5 rounded-full" style={{ background: "linear-gradient(90deg, hsl(204, 86%, 53%), hsl(164, 72%, 50%))", color: "white" }}>
                   AI
@@ -256,8 +256,8 @@ const CopilotPanel = () => {
                   <div
                     className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed ${
                       msg.role === "user"
-                        ? "bg-primary/15 border border-primary/20 text-foreground"
-                        : "bg-muted border border-border/50 text-foreground"
+                        ? "bg-slate-100 border border-slate-200 text-slate-900"
+                        : "bg-white border border-border/50 text-slate-800"
                     }`}
                   >
                     {msg.role === "ai" && (
@@ -368,14 +368,14 @@ const CopilotPanel = () => {
                 </div>
                 <button
                   onClick={handleSend}
-                  className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-slate-900 transition-transform hover:scale-105 active:scale-95"
+                  className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-slate-950 transition-transform hover:scale-105 active:scale-95"
                   style={{
-                    background: "linear-gradient(90deg, #dbeafe, #d1fae5)",
-                    boxShadow: "0 4px 10px rgba(0,0,0,0.12)",
-                    border: "1px solid #93c5fd"
+                    background: "linear-gradient(90deg, #c7d2fe, #a7f3d0)",
+                    boxShadow: "0 4px 10px rgba(15, 23, 42, 0.18)",
+                    border: "1px solid #7c3aed"
                   }}
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className="w-4 h-4 text-slate-900" />
                 </button>
               </div>
             </div>

@@ -134,11 +134,11 @@ const CopilotPanel = () => {
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
             className={`fixed top-0 ${isRight ? "right-0" : "left-0"} z-50 h-full w-[380px] max-w-[90vw] flex flex-col border-border/50 ${
               isRight ? "border-l" : "border-r"
-            }`}
+            } text-foreground bg-card`}
             style={{
-              background:
-                "linear-gradient(180deg, hsl(222 47% 8% / 0.95) 0%, hsl(250 30% 10% / 0.95) 100%)",
-              backdropFilter: "blur(20px)",
+              background: "hsl(var(--card))",
+              color: "hsl(var(--card-foreground))",
+              backdropFilter: "blur(10px)",
             }}
           >
             {/* Header */}
@@ -192,7 +192,7 @@ const CopilotPanel = () => {
                     className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed ${
                       msg.role === "user"
                         ? "bg-primary/15 border border-primary/20 text-foreground"
-                        : "glass-card text-muted-foreground"
+                        : "bg-muted border border-border/50 text-foreground"
                     }`}
                   >
                     {msg.role === "ai" && (

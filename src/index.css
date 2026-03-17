@@ -98,6 +98,17 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
+  .btn-upload-main {
+    @apply inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-white transition-all duration-300 ease-out cursor-pointer;
+    background: linear-gradient(90deg, hsl(204, 86%, 53%), hsl(164, 72%, 50%));
+  }
+
+  .btn-upload-main:hover {
+    background: linear-gradient(90deg, hsl(204, 86%, 63%), hsl(164, 72%, 60%));
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-glow);
+  }
+
   .navbar-gradient {
     background: linear-gradient(90deg, #3b82f6, #10b981);
     color: white;

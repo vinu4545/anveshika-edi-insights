@@ -49,8 +49,7 @@ const HeroSection = () => {
           >
             <a
               href="#demo"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-primary-foreground font-semibold text-sm glow-effect transition-transform hover:scale-105"
-              style={{ background: "var(--gradient-primary)" }}
+              className="btn-upload-main"
             >
               <Upload className="w-4 h-4" />
               Upload EDI File

@@ -46,7 +46,7 @@ const EDIDocumentViewer = ({ onClose, errorLine }: Props) => {
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className="w-full max-w-4xl max-h-[80vh] glass-card flex flex-col"
+        className="w-full max-w-4xl max-h-[80vh] bg-card text-foreground border border-border/30 rounded-xl overflow-hidden shadow-lg flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -72,7 +72,7 @@ const EDIDocumentViewer = ({ onClose, errorLine }: Props) => {
                   : "border-l-2 border-transparent hover:bg-muted/20"
               }`}
             >
-              <span className="w-10 shrink-0 text-right pr-3 py-1 text-muted-foreground/50 select-none border-r border-border/30">
+              <span className="w-10 shrink-0 text-right pr-3 py-1 text-foreground/70 select-none border-r border-border/30">
                 {line.number}
               </span>
               <span className={`flex-1 py-1 pl-3 pr-4 ${line.hasError ? "text-destructive" : "text-foreground/80"} whitespace-pre overflow-x-auto`}>
